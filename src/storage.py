@@ -7,7 +7,7 @@ from datetime import datetime
 if getattr(sys, 'frozen', False):
     BASE_DIR = os.path.dirname(sys.executable)
 else:
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 HISTORY_FILE = os.path.join(BASE_DIR, "clipboard_history.json")
 SETTINGS_FILE = os.path.join(BASE_DIR, "settings.json")

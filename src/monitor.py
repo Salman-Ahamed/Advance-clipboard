@@ -1,13 +1,14 @@
 import threading
 import time
 import pyperclip
-from storage import add_item
+import ctypes
+from .storage import add_item
 
 class ClipboardMonitor:
     def __init__(self, on_new_item=None):
         self._running = False
         self._thread = None
-        self._last_text = ""
+        self._last_seq = 0
         self.on_new_item = on_new_item
 
     def start(self):
@@ -15,9 +16,9 @@ class ClipboardMonitor:
             return
         self._running = True
         try:
-            self._last_text = pyperclip.paste()
+            self._last_seq = ctypes.windll.user32.GetClipboardSequenceNumber()
         except Exception:
-            self._last_text = ""
+            self._last_seq = 0
         self._thread = threading.Thread(target=self._poll, daemon=True)
         self._thread.start()
 
@@ -30,12 +31,14 @@ class ClipboardMonitor:
     def _poll(self):
         while self._running:
             try:
-                text = pyperclip.paste()
-                if text and text != self._last_text:
-                    self._last_text = text
-                    items = add_item(text)
-                    if self.on_new_item:
-                        self.on_new_item(items)
+                seq = ctypes.windll.user32.GetClipboardSequenceNumber()
+                if seq != self._last_seq:
+                    self._last_seq = seq
+                    text = pyperclip.paste()
+                    if text:
+                        items = add_item(text)
+                        if self.on_new_item:
+                            self.on_new_item(items)
             except Exception:
                 pass
             time.sleep(0.5)

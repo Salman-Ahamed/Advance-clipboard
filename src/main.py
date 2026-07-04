@@ -4,10 +4,11 @@ import threading
 import time
 import os
 import sys
+import ctypes
 
-import storage
-from monitor import ClipboardMonitor
-from paster import paste_text, type_text, smart_paste
+from . import storage
+from .monitor import ClipboardMonitor
+from .paster import paste_text, type_text, smart_paste
 
 # ── Design ────────────────────────────────────────────────────────────────────
 BG = "#0d0d14"
@@ -94,6 +95,10 @@ def create_tray_icon(root):
 
 
 def show_window(root):
+    try:
+        root._prev_hwnd = ctypes.windll.user32.GetForegroundWindow()
+    except:
+        root._prev_hwnd = None
     root.deiconify()
     root.lift()
     root.focus_force()
@@ -166,25 +171,11 @@ class ClipboardCard(tk.Frame):
         self.ts_lbl.bind("<Double-Button-1>", self._do_action)
         self._bind_recursive(self.ts_lbl, "<Button-1>", self._do_select)
 
-        # Action buttons on right
-        act = tk.Frame(inner, bg=self.cget("bg"))
-        act.pack(side="right", padx=(0, 6))
-        self._bind_recursive(act, "<Button-1>", self._do_select)
-
+        # Delete button on right
         btn_bg = self.cget("bg")
-        self.action_btn = tk.Label(act, text="▶", font=FONT_SMALL,
-                                   bg=btn_bg, fg=ACCENT, cursor="hand2", padx=4)
-        self.action_btn.pack(side="top", pady=(6, 0))
-        self.action_btn.bind("<Button-1>", lambda e: self._do_action())
-
-        self.type_btn = tk.Label(act, text="⌨", font=FONT_SMALL,
-                                 bg=btn_bg, fg=MUTED, cursor="hand2", padx=4)
-        self.type_btn.pack(side="top", pady=(0, 2))
-        self.type_btn.bind("<Button-1>", lambda e: self._do_type())
-
-        self.del_btn = tk.Label(act, text="×", font=FONT_SMALL,
-                                bg=btn_bg, fg=DELETE_RED, cursor="hand2", padx=4)
-        self.del_btn.pack(side="top", pady=(0, 2))
+        self.del_btn = tk.Label(inner, text="🗑", font=FONT_SMALL,
+                                bg=btn_bg, fg=DELETE_RED, cursor="hand2", padx=8)
+        self.del_btn.pack(side="right", padx=(0, 6), pady=8)
         self.del_btn.bind("<Button-1>", lambda e: self._do_delete())
 
         # Hover effects
@@ -272,6 +263,7 @@ class ClipboardApp:
         self.paste_mode = settings.get("paste_mode", "type")
 
         self.cards = []
+        self._prev_hwnd = None
         self._setup_ui()
         self._register_paste_hotkey()
         self._start_monitor()
@@ -465,16 +457,12 @@ class ClipboardApp:
         self._update_bottom_pin_button()
 
     def _on_card_paste(self, data):
-        self.root.withdraw()
-        self.root.update_idletasks()
-        self.root.after(100, lambda: self._execute(data["value"]))
-        self.root.after(400, self.root.deiconify)
+        self._restore_previous_window()
+        self.root.after(50, lambda: self._execute(data["value"]))
 
     def _on_card_type(self, data):
-        self.root.withdraw()
-        self.root.update_idletasks()
-        self.root.after(100, lambda: type_text(data["value"]))
-        self.root.after(400, self.root.deiconify)
+        self._restore_previous_window()
+        self.root.after(50, lambda: type_text(data["value"]))
 
     def _on_card_pin(self, real_index):
         self.items = storage.toggle_pin(real_index)
@@ -543,6 +531,14 @@ class ClipboardApp:
         self._type_selected()
 
     # ── Bottom Bar Actions ───────────────────────────────────────────────────
+    def _restore_previous_window(self):
+        try:
+            hwnd = getattr(self.root, '_prev_hwnd', None)
+            if hwnd:
+                ctypes.windll.user32.SwitchToThisWindow(hwnd, True)
+        except:
+            pass
+
     def _get_selected_item(self):
         idx = self.selected_real_index
         if idx is None or idx >= len(self.items):
@@ -558,10 +554,8 @@ class ClipboardApp:
             if not result:
                 return
         item, _ = result
-        self.root.withdraw()
-        self.root.update_idletasks()
-        self.root.after(100, lambda: self._execute(item["value"]))
-        self.root.after(400, self.root.deiconify)
+        self._restore_previous_window()
+        self.root.after(50, lambda: self._execute(item["value"]))
 
     def _type_selected(self):
         result = self._get_selected_item()
@@ -572,10 +566,8 @@ class ClipboardApp:
             if not result:
                 return
         item, _ = result
-        self.root.withdraw()
-        self.root.update_idletasks()
-        self.root.after(100, lambda: type_text(item["value"]))
-        self.root.after(400, self.root.deiconify)
+        self._restore_previous_window()
+        self.root.after(50, lambda: type_text(item["value"]))
 
     def _toggle_pin_selected(self):
         if self.selected_real_index is None:
@@ -609,6 +601,10 @@ class ClipboardApp:
             pass
 
     def _hotkey_paste(self):
+        try:
+            self._prev_hwnd = ctypes.windll.user32.GetForegroundWindow()
+        except:
+            pass
         result = self._get_selected_item()
         if not result and self.items:
             self._on_card_select(self._find_real_index(self.items[0]))
@@ -616,14 +612,12 @@ class ClipboardApp:
         if not result:
             return
         item, _ = result
-        self.root.withdraw()
-        self.root.update_idletasks()
+        self._restore_previous_window()
         global monitor
         if self.paste_mode == "paste":
             smart_paste(item["value"], monitor)
         else:
             type_text(item["value"])
-        self.root.after(400, self.root.deiconify)
 
     # ── Keyboard Shortcuts ──────────────────────────────────────────────────
     def _bind_global_shortcuts(self):
@@ -650,7 +644,7 @@ class ClipboardApp:
         self.root.mainloop()
 
 
-if __name__ == "__main__":
+def main():
     try:
         root = tk.Tk()
         app = ClipboardApp(root)
@@ -667,3 +661,7 @@ if __name__ == "__main__":
             f.write(f"Frozen: {getattr(sys, 'frozen', False)}\n\n")
             traceback.print_exc(file=f)
         raise
+
+
+if __name__ == "__main__":
+    main()

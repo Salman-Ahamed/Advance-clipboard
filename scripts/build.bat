@@ -15,7 +15,7 @@ pip install pyinstaller pyperclip keyboard pystray pillow --quiet
 echo.
 echo [3/3] Building executable...
 echo (This may take a minute or two)
-pyinstaller --noconsole --onefile --uac-admin --name "clipboard-manager" clipboard_manager.py
+pyinstaller --noconsole --onefile --uac-admin --name "clipboard-manager" main.py
 
 echo.
 echo ========================================
