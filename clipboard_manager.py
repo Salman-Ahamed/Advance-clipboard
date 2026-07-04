@@ -84,7 +84,7 @@ def create_tray_icon(root):
             draw.rectangle([18, 28, 46, 34], fill="#f1f5f9")
             return img
 
-        icon = pystray.Icon("clipboard-manager", create_image(), "Clipboard Manager")
+        icon = pystray.Icon("clipboard-manager", create_image(), "Clipboard")
         update_menu(icon)
         thread = threading.Thread(target=icon.run, daemon=True)
         thread.start()
@@ -253,7 +253,7 @@ class ClipboardCard(tk.Frame):
 class ClipboardApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Clipboard Manager")
+        self.root.title("Clipboard")
         self.root.configure(bg=BG)
         self.root.geometry(storage.load_settings().get("window_geometry", "600x400+200+100"))
         self.root.minsize(600, 400)
@@ -281,14 +281,29 @@ class ClipboardApp:
         # Header
         header = tk.Frame(self.root, bg=BG)
         header.grid(row=0, column=0, sticky="ew", padx=16, pady=(12, 4))
-        header.grid_columnconfigure(1, weight=1)
+        header.grid_columnconfigure(3, weight=1)
 
-        tk.Label(header, text="☰ Clipboard Manager", font=FONT_HEADER,
+        tk.Label(header, text="☰ Clipboard", font=FONT_HEADER,
                  bg=BG, fg=TEXT).grid(row=0, column=0, sticky="w")
+
+        # Paste / Type mode buttons in header
+        mode_style = {"font": FONT_SMALL, "relief": "flat",
+                      "padx": 10, "pady": 2, "cursor": "hand2", "bd": 0}
+        self.paste_btn = tk.Button(header, text="📋  Paste",
+                                   bg=ACCENT, fg=TEXT,
+                                   activebackground="#6d28d9", activeforeground=TEXT,
+                                   **mode_style, command=self._on_paste_click)
+        self.paste_btn.grid(row=0, column=1, padx=(8, 2))
+
+        self.type_btn = tk.Button(header, text="⌨  Type",
+                                  bg=CARD, fg=MUTED,
+                                  activebackground=ACCENT, activeforeground=TEXT,
+                                  **mode_style, command=self._on_type_click)
+        self.type_btn.grid(row=0, column=2, padx=(2, 0))
 
         # Search + pinned toggle
         search_frame = tk.Frame(header, bg=BG)
-        search_frame.grid(row=0, column=1, sticky="e")
+        search_frame.grid(row=0, column=3, sticky="e")
 
         self.pinned_btn = tk.Button(search_frame, text="★ Only", font=FONT_SMALL,
                                     bg=CARD, fg=MUTED, relief="flat", padx=8, pady=2,
@@ -350,32 +365,20 @@ class ClipboardApp:
         btn_style = {"font": FONT_SMALL, "relief": "flat",
                      "padx": 10, "pady": 4, "cursor": "hand2", "bd": 0}
 
-        self.paste_btn = tk.Button(bottom, text="📋  Paste",
-                                   bg=ACCENT, fg=TEXT,
-                                   activebackground="#6d28d9", activeforeground=TEXT,
-                                   **btn_style, command=self._on_paste_click)
-        self.paste_btn.grid(row=0, column=1, padx=(0, 4))
-
-        self.type_btn = tk.Button(bottom, text="⌨  Type",
-                                  bg=CARD, fg=MUTED,
-                                  activebackground=ACCENT, activeforeground=TEXT,
-                                  **btn_style, command=self._on_type_click)
-        self.type_btn.grid(row=0, column=2, padx=(0, 4))
-
         btn_style_full = dict(btn_style, bg=CARD, fg=TEXT,
                               activebackground=ACCENT, activeforeground=TEXT)
         self.pin_btn = tk.Button(bottom, text="☆  Pin", **btn_style_full,
                                  command=self._toggle_pin_selected)
-        self.pin_btn.grid(row=0, column=3, padx=(0, 4))
+        self.pin_btn.grid(row=0, column=1, padx=(0, 4))
 
         delete_style = dict(btn_style_full, fg=DELETE_RED, activebackground="#450a0a")
         self.delete_btn = tk.Button(bottom, text="✕  Delete", **delete_style,
                                     command=self._delete_selected)
-        self.delete_btn.grid(row=0, column=4, padx=(0, 4))
+        self.delete_btn.grid(row=0, column=2, padx=(0, 4))
 
         self.clear_btn = tk.Button(bottom, text="🗑  Clear Unpinned", **btn_style_full,
                                    command=self._clear_unpinned)
-        self.clear_btn.grid(row=0, column=5, padx=(0, 4))
+        self.clear_btn.grid(row=0, column=3, padx=(0, 4))
 
         self.search_var.trace_add("write", lambda *a: self._on_search())
         self._update_mode_buttons()
@@ -651,7 +654,7 @@ if __name__ == "__main__":
         exe_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
         log_path = os.path.join(exe_dir, "crash_log.txt")
         with open(log_path, "w", encoding="utf-8") as f:
-            f.write(f"Clipboard Manager Crash Log\n")
+            f.write(f"Clipboard Crash Log\n")
             f.write(f"Frozen: {getattr(sys, 'frozen', False)}\n\n")
             traceback.print_exc(file=f)
         raise
