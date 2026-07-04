@@ -128,12 +128,14 @@ class ClipboardCard(tk.Frame):
         inner = tk.Frame(self, bg=self.cget("bg"))
         inner.pack(fill="x", padx=0, pady=0)
         inner.bind("<Button-1>", self._do_select)
+        inner.bind("<Double-Button-1>", self._do_action)
         self._bind_recursive(inner, "<Button-1>", self._do_select)
 
         # Left accent bar
         accent_color = ACCENT if data.get("pinned") else (ACCENT if is_selected else BORDER)
         self.accent = tk.Frame(inner, width=4, bg=accent_color)
         self.accent.pack(side="left", fill="y")
+        self.accent.bind("<Double-Button-1>", self._do_action)
         self._bind_recursive(self.accent, "<Button-1>", self._do_select)
 
         # Pin star
@@ -154,12 +156,14 @@ class ClipboardCard(tk.Frame):
         self.val_lbl = tk.Label(self.text_frame, text=display, font=FONT,
                                 bg=self.cget("bg"), fg=TEXT, anchor="w", wraplength=400)
         self.val_lbl.pack(fill="x")
+        self.val_lbl.bind("<Double-Button-1>", self._do_action)
         self._bind_recursive(self.val_lbl, "<Button-1>", self._do_select)
 
         ts = data.get("timestamp", time.time())
         self.ts_lbl = tk.Label(self.text_frame, text=format_time(ts),
                                font=FONT_TIMESTAMP, bg=self.cget("bg"), fg=MUTED, anchor="w")
         self.ts_lbl.pack(fill="x")
+        self.ts_lbl.bind("<Double-Button-1>", self._do_action)
         self._bind_recursive(self.ts_lbl, "<Button-1>", self._do_select)
 
         # Action buttons on right
@@ -464,11 +468,13 @@ class ClipboardApp:
         self.root.withdraw()
         self.root.update_idletasks()
         self.root.after(100, lambda: self._execute(data["value"]))
+        self.root.after(400, self.root.deiconify)
 
     def _on_card_type(self, data):
         self.root.withdraw()
         self.root.update_idletasks()
         self.root.after(100, lambda: type_text(data["value"]))
+        self.root.after(400, self.root.deiconify)
 
     def _on_card_pin(self, real_index):
         self.items = storage.toggle_pin(real_index)
@@ -555,6 +561,7 @@ class ClipboardApp:
         self.root.withdraw()
         self.root.update_idletasks()
         self.root.after(100, lambda: self._execute(item["value"]))
+        self.root.after(400, self.root.deiconify)
 
     def _type_selected(self):
         result = self._get_selected_item()
@@ -568,6 +575,7 @@ class ClipboardApp:
         self.root.withdraw()
         self.root.update_idletasks()
         self.root.after(100, lambda: type_text(item["value"]))
+        self.root.after(400, self.root.deiconify)
 
     def _toggle_pin_selected(self):
         if self.selected_real_index is None:
@@ -615,6 +623,7 @@ class ClipboardApp:
             smart_paste(item["value"], monitor)
         else:
             type_text(item["value"])
+        self.root.after(400, self.root.deiconify)
 
     # ── Keyboard Shortcuts ──────────────────────────────────────────────────
     def _bind_global_shortcuts(self):
