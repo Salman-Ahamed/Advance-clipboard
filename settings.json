@@ -1,0 +1,7 @@
+{
+  "window_hotkey": "ctrl+shift+v",
+  "window_geometry": "600x400+200+100",
+  "theme": "dark",
+  "max_history": 500,
+  "paste_mode": "type"
+}
