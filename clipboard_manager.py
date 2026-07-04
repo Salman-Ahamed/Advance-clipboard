@@ -265,7 +265,7 @@ class ClipboardApp:
         self.selected_real_index = None
 
         settings = storage.load_settings()
-        self.paste_mode = settings.get("paste_mode", "paste")
+        self.paste_mode = settings.get("paste_mode", "type")
 
         self.cards = []
         self._setup_ui()
@@ -438,7 +438,7 @@ class ClipboardApp:
 
         total = len(self.items)
         pinned = sum(1 for i in self.items if i.get("pinned", False))
-        self.status_label.config(text=f"Ctrl+Shift+V / Ctrl+Shift+Space: Paste  |  Total: {total}  |  Pinned: {pinned}")
+        self.status_label.config(text=f"Ctrl+Shift+Space: Paste  |  Total: {total}  |  Pinned: {pinned}")
 
         if self.selected_real_index is not None:
             self.root.after_idle(self._scroll_to_selection)
@@ -593,7 +593,6 @@ class ClipboardApp:
     def _register_paste_hotkey(self):
         try:
             import keyboard
-            keyboard.add_hotkey("ctrl+shift+v", lambda: self.root.after(0, self._hotkey_paste))
             keyboard.add_hotkey("ctrl+shift+space", lambda: self.root.after(0, self._hotkey_paste))
         except Exception:
             pass

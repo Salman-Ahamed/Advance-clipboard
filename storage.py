@@ -17,7 +17,7 @@ DEFAULT_SETTINGS = {
     "window_geometry": "600x400+200+100",
     "theme": "dark",
     "max_history": 500,
-    "paste_mode": "paste",
+    "paste_mode": "type",
 }
 
 def load_history():
